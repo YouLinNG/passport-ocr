@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Hello World!</title>
+    <!-- https://electronjs.org/docs/tutorial/security#csp-meta-tag -->
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="script-src 'self' 'unsafe-inline';"
+    />
+    <link
+      rel="stylesheet"
+      href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css"
+      rel="external nofollow"
+    />
+  </head>
+  <body>
+    <div class="container">
+      <button class="btn btn-primary" id="file" style="margin: 20px 0;">
+        点击选择文件（支持多选）
+      </button>
+      <button class="btn btn-primary" id="save" style="margin: 20px 0;">
+        保存表格
+      </button>
+      <div id="info"></div>
+      <div id="failed"></div>
+      <table class="table">
+        <thead>
+          <tr>
+            <th scope="col">姓名</th>
+            <th scope="col">性别</th>
+            <th scope="col">出生日期</th>
+            <th scope="col">国籍</th>
+            <th scope="col">护照号码</th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+    <script type="text/javascript" charset="utf-8">
+      const { dialog } = require("electron").remote;
+      const { ipcRenderer } = require("electron");
+      let total = 0;
+      let cur = 1;
+      document
+        .getElementById("file")
+        .addEventListener("click", async function() {
+          const { filePaths } = await dialog.showOpenDialog({
+            defaultPath: "C:\\",
+            filters: [{ extensions: ["png", "jpg", "jpeg"] }],
+            properties: ["openFile", "multiSelections"]
+          });
+          if (filePaths && filePaths[0]) {
+            total = filePaths.length;
+            document.getElementById(
+              "info"
+            ).innerHTML = `处理第${cur}/${total}个，请稍后`;
+            ipcRenderer.send("asynchronous-message", filePaths);
+          }
+        });
+      const results = [];
+      document
+        .getElementById("save")
+        .addEventListener("click", async function() {
+          const { filePath } = await dialog.showSaveDialog({
+            defaultPath: "C:\\",
+            filters: [{ extensions: ["xlsx"] }]
+          });
+          if (filePath) {
+            ipcRenderer.send("save-message", {
+              filePath,
+              results
+            });
+          }
+        });
+      let failed = 0;
+      ipcRenderer.on("asynchronous-reply", (event, res) => {
+        if (res === "failed") {
+          failed += 1;
+          document.getElementById("failed").innerHTML = `失败${failed}次`;
+          return;
+        }
+        if (res === "end") {
+          let total = 0;
+          let cur = 1;
+          document.getElementById("info").innerHTML = `处理结束`;
+          return;
+        }
+        cur += 1;
+        document.getElementById(
+          "info"
+        ).innerHTML = `处理第${cur}/${total}个，请稍后`;
+        results.push(res);
+        document.getElementById("tbody").innerHTML = results.reduce(
+          (pre, cur) => {
+            const row = `<tr><td>${cur.name}</td>
+              <td>${cur.gender}</td>
+              <td>${cur.birth}</td>
+              <td>${cur.country}</td>
+              <td>${cur.id}</td></tr>`;
+            return row + pre;
+          },
+          ""
+        );
+      });
+      ipcRenderer.on("save-reply", (event, res) => {
+        document.getElementById("failed").innerHTML = res;
+      });
+    </script>
+  </body>
+</html>

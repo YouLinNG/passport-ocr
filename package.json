@@ -1,0 +1,19 @@
+{
+  "name": "passport-ocr",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "chcp 65001 && electron .",
+    "build": "electron-packager ./ myapp --out ./OutApp --app-version 0.01 --overwrite"
+  },
+  "author": "",
+  "devDependencies": {
+    "electron": "^7.1.2",
+    "electron-packager": "^14.1.1"
+  },
+  "dependencies": {
+    "tesseract.js": "^2.0.0-beta.2",
+    "xlsx": "^0.15.3"
+  }
+}
